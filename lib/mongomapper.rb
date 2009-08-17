@@ -61,10 +61,17 @@ module MongoMapper
   end
 
   def self.database=(name)
-    @@database = MongoMapper.connection.db(name)
+    @@databases ||= {}
+    unless @@databases.keys.include?(name.to_sym)
+      @@databases[name.to_sym] = MongoMapper.connection.db(name)
+    end
+    @@current_database = @@databases[name.to_sym]
   end
 
-  def self.database
-    @@database
+  def self.database(name=nil)
+    unless name.nil?
+      self.database = name
+    end
+    @@current_database
   end
 end

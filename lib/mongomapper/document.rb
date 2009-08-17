@@ -124,7 +124,7 @@ module MongoMapper
         if name.nil?
           @database ||= MongoMapper.database
         else
-          @database = connection.db(name)
+          @database = MongoMapper.database(name)
         end
         @database
       end
