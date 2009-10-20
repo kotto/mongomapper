@@ -672,7 +672,10 @@ class DocumentTest < Test::Unit::TestCase
             Thing.count.should == 1
             @property1.destroy
             Thing.count.should == 0
-            @property1.thing.should be_frozen
+          end
+          should "return a nil association because property delete" do
+            @property1.destroy
+            @property1.thing.should be_nil
           end
         end
       end
