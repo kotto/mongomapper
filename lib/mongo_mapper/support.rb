@@ -9,7 +9,7 @@ class Array
     value = value.respond_to?(:lines) ? value.lines : value
     value.to_a
   end
-  
+
   def self.from_mongo(value)
     value || []
   end
@@ -22,7 +22,7 @@ class Date
   rescue
     nil
   end
-  
+
   def self.from_mongo(value)
     value.to_date if value.present?
   end
@@ -30,7 +30,8 @@ end
 
 class Float
   def self.to_mongo(value)
-    value.to_f
+    value_to_f = value.to_f
+    value_to_f == 0.0 ? nil : value_to_f
   end
 end
 
@@ -38,7 +39,7 @@ class Hash
   def self.from_mongo(value)
     HashWithIndifferentAccess.new(value || {})
   end
-  
+
   def to_mongo
     self
   end
@@ -59,7 +60,7 @@ class NilClass
   def to_mongo(value)
     value
   end
-  
+
   def from_mongo(value)
     value
   end
@@ -84,11 +85,11 @@ class Object
   def class_def(name, &blk)
     class_eval { define_method(name, &blk) }
   end
-  
+
   def self.to_mongo(value)
     value
   end
-  
+
   def self.from_mongo(value)
     value
   end
@@ -98,7 +99,7 @@ class Set
   def self.to_mongo(value)
     value.to_a
   end
-  
+
   def self.from_mongo(value)
     Set.new(value || [])
   end
@@ -108,7 +109,7 @@ class String
   def self.to_mongo(value)
     value.nil? ? nil : value.to_s
   end
-  
+
   def self.from_mongo(value)
     value.nil? ? nil : value.to_s
   end
@@ -122,7 +123,7 @@ class Symbol
   end
 end
 
-class Time  
+class Time
   def self.to_mongo(value)
     if value.nil? || value == ''
       nil
@@ -131,7 +132,7 @@ class Time
       time && time.utc
     end
   end
-  
+
   def self.from_mongo(value)
     if MongoMapper.use_time_zone? && value.present?
       value.in_time_zone(Time.zone)

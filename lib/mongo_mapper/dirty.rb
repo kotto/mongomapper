@@ -1,12 +1,29 @@
 module MongoMapper
   module Dirty
+    module ClassMethods
+      def initialize_each(*docs)
+        docs_create = super(*docs)
+        if docs_create.kind_of?(Array)
+          docs_create.each{ |doc| doc.clear_changes }
+        else
+          docs_create.clear_changes
+        end
+        docs_create
+      end
+    end
+
+    module InstanceMethods
     DIRTY_SUFFIXES = ['_changed?', '_change', '_will_change!', '_was']
-    
+
+    def clear_changes
+      changed_keys.clear
+    end
+
     def method_missing(method, *args, &block)
       if method.to_s =~ /(_changed\?|_change|_will_change!|_was)$/
         method_suffix = $1
         key = method.to_s.gsub(method_suffix, '')
-        
+
         if key_names.include?(key)
           case method_suffix
             when '_changed?'
@@ -25,7 +42,7 @@ module MongoMapper
         super
       end
     end
-    
+
     def changed?
       !changed_keys.empty?
     end
@@ -45,7 +62,7 @@ module MongoMapper
     def changes
       changed.inject({}) { |h, attribute| h[attribute] = key_change(attribute); h }
     end
-    
+
     def initialize(attrs={})
       super(attrs)
       changed_keys.clear unless new?
@@ -72,6 +89,7 @@ module MongoMapper
     #   changed_keys.clear
     #   record
     # end
+    #
 
     private
       def clone_key_value(attribute_name)
@@ -80,7 +98,7 @@ module MongoMapper
       rescue TypeError, NoMethodError
         value
       end
-      
+
       # Map of change <tt>attr => original value</tt>.
       def changed_keys
         @changed_keys ||= {}
@@ -122,15 +140,16 @@ module MongoMapper
         # Carry on.
         super(attribute, value)
       end
-      
+
       def value_changed?(key_name, old, value)
         key = _keys[key_name]
-        
+
         if key.number? && value.blank?
           value = nil
         end
-        
+
         old != value
       end
+    end
   end
 end

@@ -13,6 +13,7 @@ module MongoMapper
         include RailsCompatibility::EmbeddedDocument
         include Validatable
         include Serialization
+        include Dirty::InstanceMethods
 
         extend Validations::Macros
 
@@ -56,11 +57,11 @@ module MongoMapper
 
         key
       end
-      
+
       def using_object_id?
         object_id_key?(:_id)
       end
-      
+
       def object_id_key?(name)
         key = keys[name.to_s]
         key && key.type == ObjectId
@@ -75,22 +76,22 @@ module MongoMapper
           parent_class.ancestors.include?(EmbeddedDocument)
         end
       end
-      
+
       def to_mongo(instance)
         return nil if instance.nil?
         instance.to_mongo
       end
-      
+
       def from_mongo(instance_or_hash)
         return nil if instance_or_hash.nil?
-        
+
         if instance_or_hash.is_a?(self)
           instance_or_hash
         else
           initialize_doc(instance_or_hash)
         end
       end
-      
+
     private
       def initialize_doc(doc)
         begin
@@ -135,7 +136,7 @@ module MongoMapper
         end_eval
         include accessors_module
       end
-      
+
       def create_key_in_subclasses(*args)
         return if subclasses.blank?
 
@@ -182,7 +183,7 @@ module MongoMapper
       def logger
         self.class.logger
       end
-      
+
       def initialize(attrs={})
         unless attrs.nil?
           self.class.associations.each_pair do |name, association|
@@ -198,7 +199,7 @@ module MongoMapper
           end
 
           self.attributes = attrs
-          
+
           if respond_to?(:_type=) && self['_type'].blank?
             self._type = self.class.name
           end
@@ -217,7 +218,7 @@ module MongoMapper
       def new?
         !!@new_document
       end
-      
+
       def to_param
         id
       end
@@ -237,38 +238,38 @@ module MongoMapper
 
       def attributes
         attrs = HashWithIndifferentAccess.new
-        
+
         embedded_keys.each do |key|
           attrs[key.name] = read_attribute(key.name).try(:attributes)
         end
-        
+
         non_embedded_keys.each do |key|
           attrs[key.name] = read_attribute(key.name)
         end
-        
+
         embedded_associations.each do |association|
           documents = instance_variable_get(association.ivar)
           next if documents.nil?
           attrs[association.name] = documents.collect { |doc| doc.attributes }
         end
-        
+
         attrs
       end
-      
+
       def to_mongo
         attrs = HashWithIndifferentAccess.new
-        
+
         _keys.each_pair do |name, key|
           value = key.set(read_attribute(key.name))
           attrs[name] = value unless value.nil?
         end
-        
+
         embedded_associations.each do |association|
           if documents = instance_variable_get(association.ivar)
             attrs[association.name] = documents.map { |document| document.to_mongo }
           end
         end
-        
+
         attrs
       end
 
@@ -301,7 +302,7 @@ module MongoMapper
         else
           @using_custom_id = true
         end
-        
+
         write_attribute :_id, value
       end
 
@@ -321,7 +322,7 @@ module MongoMapper
           _root_document.save
         end
       end
-      
+
       def save!
         if _root_document
           _root_document.save!
@@ -337,19 +338,19 @@ module MongoMapper
         def _keys
           self.metaclass.keys
         end
-        
+
         def key_names
           _keys.keys
         end
-        
+
         def non_embedded_keys
           _keys.values.select { |key| !key.embeddable? }
         end
-        
+
         def embedded_keys
           _keys.values.select { |key| key.embeddable? }
         end
-        
+
         def ensure_key_exists(name)
           self.metaclass.key(name) unless respond_to?("#{name}=")
         end
@@ -373,7 +374,7 @@ module MongoMapper
           instance_variable_set "@#{name}_before_typecast", value
           instance_variable_set "@#{name}", key.set(value)
         end
-        
+
         def embedded_associations
           self.class.associations.select do |name, association|
             association.embeddable?

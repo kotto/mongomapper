@@ -8,10 +8,10 @@ module MongoMapper
         include InstanceMethods
         include Observing
         include Callbacks
-        include Dirty
         include RailsCompatibility::Document
         extend Validations::Macros
         extend ClassMethods
+        extend Dirty::ClassMethods
         extend Finders
 
         def self.per_page
@@ -73,7 +73,7 @@ module MongoMapper
             end
         end
       end
-      
+
       def find(*args)
         find!(*args)
       rescue DocumentNotFound
@@ -91,10 +91,10 @@ module MongoMapper
         pagination
       end
 
-      # @param [Hash] options any conditions understood by 
+      # @param [Hash] options any conditions understood by
       #   FinderOptions.to_mongo_criteria
       #
-      # @return the first document in the ordered collection as described by 
+      # @return the first document in the ordered collection as described by
       #   +options+
       #
       # @see FinderOptions
@@ -102,13 +102,13 @@ module MongoMapper
         find_one(options)
       end
 
-      # @param [Hash] options any conditions understood by 
+      # @param [Hash] options any conditions understood by
       #   FinderOptions.to_mongo_criteria
-      # @option [String] :order this *mandatory* option describes how to 
-      #   identify the ordering of the documents in your collection. Note that 
+      # @option [String] :order this *mandatory* option describes how to
+      #   identify the ordering of the documents in your collection. Note that
       #   the *last* document in this collection will be selected.
       #
-      # @return the last document in the ordered collection as described by 
+      # @return the last document in the ordered collection as described by
       #   +options+
       #
       # @raise Exception when no <tt>:order</tt> option has been defined
@@ -117,10 +117,10 @@ module MongoMapper
         find_one(options.merge(:order => invert_order_clause(options[:order])))
       end
 
-      # @param [Hash] options any conditions understood by 
+      # @param [Hash] options any conditions understood by
       #   FinderOptions.to_mongo_criteria
       #
-      # @return [Array] all documents in your collection that match the 
+      # @return [Array] all documents in your collection that match the
       #   provided conditions
       #
       # @see FinderOptions
@@ -142,12 +142,12 @@ module MongoMapper
 
       # @overload create(doc_attributes)
       #   Create a single new document
-      #   @param [Hash] doc_attributes key/value pairs to create a new 
+      #   @param [Hash] doc_attributes key/value pairs to create a new
       #     document
       #
       # @overload create(docs_attributes)
       #   Create many new documents
-      #   @param [Array<Hash>] provide many Hashes of key/value pairs to create 
+      #   @param [Array<Hash>] provide many Hashes of key/value pairs to create
       #     multiple documents
       #
       # @example Creating a single document
@@ -156,7 +156,7 @@ module MongoMapper
       # @example Creating multiple documents
       #   MyModel.create([{ :foo => "bar" }, { :foo => "baz" })
       #
-      # @return [Boolean] when a document is successfully created, +true+ will 
+      # @return [Boolean] when a document is successfully created, +true+ will
       #   be returned. If a document fails to create, +false+ will be returned.
       def create(*docs)
         initialize_each(*docs) { |doc| doc.save }
@@ -172,13 +172,13 @@ module MongoMapper
       # @overload update(id, attributes)
       #   Update a single document
       #   @param id the ID of the document you wish to update
-      #   @param [Hash] attributes the key to update on the document with a new 
+      #   @param [Hash] attributes the key to update on the document with a new
       #     value
       #
       # @overload update(ids_and_attributes)
       #   Update multiple documents
-      #   @param [Hash] ids_and_attributes each key is the ID of some document 
-      #     you wish to update. The value each key points toward are those 
+      #   @param [Hash] ids_and_attributes each key is the ID of some document
+      #     you wish to update. The value each key points toward are those
       #     applied to the target document
       #
       # @example Updating single document
@@ -195,7 +195,7 @@ module MongoMapper
         end
       end
 
-      # Removes ("deletes") one or many documents from the collection. Note 
+      # Removes ("deletes") one or many documents from the collection. Note
       # that this will bypass any +destroy+ hooks defined by your class.
       #
       # @param [Array] ids the ID or IDs of the records you wish to delete
@@ -207,8 +207,8 @@ module MongoMapper
         collection.remove(to_criteria(options))
       end
 
-      # Iterates over each document found by the provided IDs and calls their 
-      # +destroy+ method. This has the advantage of processing your document's 
+      # Iterates over each document found by the provided IDs and calls their
+      # +destroy+ method. This has the advantage of processing your document's
       # +destroy+ call-backs.
       #
       # @overload destroy(id)
@@ -240,9 +240,9 @@ module MongoMapper
       #   @return [Mongo::Connection] the connection used by your document class
       #
       # @overload connection(mongo_connection)
-      #   @param [Mongo::Connection] mongo_connection a new connection for your 
+      #   @param [Mongo::Connection] mongo_connection a new connection for your
       #     document class to use
-      #   @return [Mongo::Connection] a new Mongo::Connection for yoru document 
+      #   @return [Mongo::Connection] a new Mongo::Connection for yoru document
       #     class
       def connection(mongo_connection=nil)
         if mongo_connection.nil?
@@ -259,7 +259,7 @@ module MongoMapper
       def set_database_name(name)
         @database_name = name
       end
-      
+
       # Returns the database name
       #
       # @return [String] the database name
@@ -288,7 +288,7 @@ module MongoMapper
 
       # Returns the collection name, if not set, defaults to class name tableized
       #
-      # @return [String] the collection name, if not set, defaults to class 
+      # @return [String] the collection name, if not set, defaults to class
       #   name tableized
       def collection_name
         @collection_name ||= self.to_s.tableize.gsub(/\//, '.')
@@ -298,9 +298,9 @@ module MongoMapper
       def collection
         database.collection(collection_name)
       end
-      
-      # Defines a +created_at+ and +updated_at+ attribute (with a +Time+ 
-      # value) on your document. These attributes are updated by an 
+
+      # Defines a +created_at+ and +updated_at+ attribute (with a +Time+
+      # value) on your document. These attributes are updated by an
       # injected +update_timestamps+ +before_save+ hook.
       def timestamps!
         key :created_at, Time
@@ -465,6 +465,7 @@ module MongoMapper
       def save_to_collection
         clear_custom_id_flag
         collection.save(to_mongo)
+        clear_changes
       end
 
       def update_timestamps
